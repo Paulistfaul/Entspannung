@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CalmLoop — Stress Coach</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CalmLoop">
+<meta name="theme-color" content="#101820">
+<style>
+:root{--bg:#101820;--card:#111a23;--ink:#e7eef5;--muted:#9fb3c8;--accent:#4dc0b5;--accent-2:#8aa6ff;--ok:#4caf50;--danger:#ff5a5f;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:16px;--gap:14px;--font:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font)}.container{max-width:860px;margin:0 auto;padding:clamp(12px,3vw,24px);padding-bottom:40px}
+header{position:sticky;top:0;background:linear-gradient(180deg,rgba(16,24,32,.95),rgba(16,24,32,.85));backdrop-filter:blur(6px);z-index:10}.brand{display:flex;align-items:center;gap:10px;padding:12px 4px}.brand .logo{width:34px;height:34px;border-radius:10px;background:#15222e;display:grid;place-items:center;box-shadow:var(--shadow)}.brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}.nav button{flex:1;min-width:120px;padding:12px;border-radius:12px;border:1px solid #1d2a36;background:#0e1821;color:var(--ink);font-weight:600}.nav button.active{border-color:var(--accent);outline:2px solid rgba(77,192,181,.25)}
+.card{background:var(--card);border:1px solid #1d2a36;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:12px 0}h2{font-size:18px;margin:0 0 10px}label{font-size:14px;color:var(--muted)}input[type=range]{width:100%}
+.row{display:flex;gap:var(--gap);flex-wrap:wrap}.col{flex:1;min-width:260px}.small{font-size:12px;color:var(--muted)}.tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#0e1821;border:1px solid #1d2a36;color:var(--ink);font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border-radius:12px;border:none;font-weight:700;cursor:pointer}.btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#07121b}.btn-ghost{background:#0e1821;color:var(--ink);border:1px solid #1d2a36}.btn-danger{background:linear-gradient(90deg,#ff7a7f,#ff5a5f);color:#2b0d0f}
+.breath-visual{height:220px;display:grid;place-items:center}.circle{width:120px;height:120px;border-radius:999px;border:3px solid var(--accent);display:grid;place-items:center;transition:transform .8s ease}.circle p{margin:0;font-weight:800;letter-spacing:1px}
+.progress{width:100%;height:10px;background:#0e1821;border:1px solid #1d2a36;border-radius:8px;overflow:hidden}.progress>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}.modal>.box{background:#111a23;border:1px solid #1d2a36;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);width:min(620px,92vw);padding:16px}
+.help{background:#0e1821;border:1px solid #1d2a36;border-radius:12px;padding:10px;color:var(--ink)}.value-badge{display:inline-block;min-width:28px;text-align:center;padding:2px 6px;border-radius:8px;background:#0e1821;border:1px solid #1d2a36;margin-left:6px}.hide{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="brand"><div class="logo"><b>CL</b></div><h1>CalmLoop — Stress Coach</h1></div>
+    <div class="nav">
+      <button data-view="coach" class="active">Coach</button>
+      <button data-view="log">Protokoll</button>
+      <button data-view="stats">Stats</button>
+      <button data-view="settings">Einstellungen</button>
+      <button data-view="extras">Extras</button>
+    </div>
+  </div>
+</header>
+
+<div class="container" id="app">
+  <section class="view card" id="view-coach">
+    <h2>Session planen</h2>
+    <div class="row">
+      <div class="col">
+        <label>Verfügbare Zeit: <b><span id="minLabel">5</span> Min</b></label>
+        <div class="small">Empfohlen: <b><span id="recLabel">–</span></b></div>
+        <input type="range" id="minutes" min="1" max="30" value="5">
+        <div class="small">Die App passt Übungen an deine verfügbare Zeit und den Check-in an.</div>
+      </div>
+      <div class="col">
+        <label>Audio-Anweisungen</label><br>
+        <button id="toggleVoice" class="btn btn-ghost">🔈 Aus</button>
+        <span class="small">Nur wenn du es einschaltest. TTS wird automatisch auf <b>Deutsch</b> gestellt.</span>
+      </div>
+    </div>
+
+    <div class="help" id="primer"><b>Was passiert in einer Session?</b><br>1) Klare Text-/Sprachhinweise. 2) Kreis zeigt Ein-/Ausatmen. 3) Oben: <b>Gesamt‑Restzeit</b> & <b>Schritt‑Restzeit</b>. 4) Am Ende bewerten.</div>
+
+    <div class="card">
+      <h2>Vorschlag</h2>
+      <div id="suggestion" class="small">Check-in oder Regler bewegen und „Vorschlagen“ tippen.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button id="btnCheckin" class="btn btn-ghost">Check-in</button>
+        <button id="btnSuggest" class="btn btn-ghost">Vorschlagen</button>
+        <button id="btnStart" class="btn btn-primary">Session starten</button>
+      </div>
+    </div>
+
+    <div class="card hide" id="coach-runner">
+      <h2 id="stepTitle">Anleitung</h2>
+      <div class="row">
+        <div class="col"><div class="small">Gesamt‑Restzeit: <b><span id="totalRemain">–</span></b></div><div class="progress"><div id="totalProg"></div></div></div>
+        <div class="col"><div class="small">Schritt‑Restzeit: <b><span id="stepRemain">–</span></b></div><div class="progress"><div id="stepProg"></div></div></div>
+      </div>
+      <div class="breath-visual"><div class="circle" id="circle"><p id="phaseLabel">—</p></div></div>
+      <div class="small" id="textGuide">Bereit?</div>
+      <div class="help" id="howTo" style="margin-top:10px"></div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button id="btnPause" class="btn btn-ghost">Pause</button><button id="btnStop" class="btn btn-danger">Beenden</button></div>
+    </div>
+  </section>
+
+  <section class="view card" id="view-log" style="display:none">
+    <h2>Protokoll</h2>
+    <div class="row">
+      <div class="col"><label>Stress (vorher) <span class="value-badge" id="sbVal">4</span></label><input type="range" id="stressBefore" min="0" max="10" value="4"></div>
+      <div class="col"><label>Stress (nachher) <span class="value-badge" id="saVal">2</span></label><input type="range" id="stressAfter" min="0" max="10" value="2"></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>Bauchdruck <span class="value-badge" id="bellyVal">3</span></label><input type="range" id="belly" min="0" max="10" value="3"></div>
+      <div class="col"><label>Appetit <span class="value-badge" id="appVal">6</span></label><input type="range" id="appetite" min="0" max="10" value="6"></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>Schlaf (letzte Nacht) <span class="value-badge" id="sleepVal">6</span></label><input type="range" id="sleep" min="0" max="10" value="6"></div>
+      <div class="col"><label>Übungsart</label><br><select id="logKind"><option>4-7-8</option><option>Box</option><option>Resonanz</option><option>PMR</option><option>Body-Scan</option><option>Visualisierung</option><option>Stretching</option></select></div>
+    </div>
+    <div><label>Notizen</label><textarea id="notes" rows="3" style="width:100%;background:#0e1821;border:1px solid #1d2a36;border-radius:10px;color:var(--ink);padding:10px"></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button id="btnSaveLog" class="btn btn-primary">Eintrag speichern</button><button id="btnExport" class="btn btn-ghost">Export (JSON)</button><input type="file" id="importFile" accept=".json" style="display:none"><button id="btnImport" class="btn btn-ghost">Import</button><button id="btnClear" class="btn btn-danger">Alles löschen</button></div>
+    <hr><div id="logList" class="small"></div>
+  </section>
+
+  <section class="view card" id="view-stats" style="display:none">
+    <h2>Stats</h2>
+    <canvas id="chart" class="stat-canvas"></canvas>
+    <div class="row"><div class="col"><div class="tag">Streak: <b id="streak">0</b> Tage</div></div><div class="col"><div class="tag">Ø Stress-Reduktion: <b id="avgDelta">0</b></div></div></div>
+  </section>
+
+  <section class="view card" id="view-settings" style="display:none">
+    <h2>Einstellungen</h2>
+    <div class="row">
+      <div class="col"><label>Stimme für Audio-Anweisungen (Deutsch bevorzugt)</label><br><select id="voiceSelect"></select></div>
+      <div class="col"><label>Erinnerungen</label><br><div class="small">Kalender‑Erinnerungen erzeugen.</div><div style="display:flex;gap:8px;margin-top:8px"><input type="time" id="rem1" value="07:30"><input type="time" id="rem2" value="15:30"><input type="time" id="rem3" value="22:00"><button id="btnICS" class="btn btn-ghost">Kalender .ics</button></div></div>
+    </div>
+  </section>
+
+  <section class="view card" id="view-extras" style="display:none">
+    <h2>Zusatzübungen (optional, mit Anleitung)</h2>
+    <ul class="small">
+      <li><b>2‑Minuten‑Drop</b>:
+        <ol>
+          <li><b>60 s Bauchatmung</b>: Hand auf Bauch, ruhig durch die Nase ein, länger durch den Mund aus.</li>
+          <li><b>30 s Schulter</b>: 5× langsam Schulterkreisen nach hinten, dann nach vorne; am Ende Schultern bewusst fallen lassen.</li>
+          <li><b>30 s Kiefer</b>: Zähne getrennt, Zunge locker am Gaumen, Lippen zu; 3× „Kiefer anspannen (2 s) → lösen (5 s)“.</li>
+        </ol>
+      </li>
+      <li><b>Walk‑Reset (5–10 Min)</b>: Leiser Spaziergang, kein Handy, Rhythmus: 4 Schritte ein, 6 Schritte aus.</li>
+      <li><b>Screen‑Cut</b>: 30 Min vor Schlaf kein Bildschirm; stattdessen 5 Min Bauchatmung + kurzes Stretching.</li>
+      <li><b>Magnesium‑Check</b>: 300–400 mg/Tag nur wenn verträglich (keine medizinische Beratung, ggf. ärztlich abklären).</li>
+    </ul>
+  </section>
+</div>
+
+<div id="checkinModal" class="modal">
+  <div class="box">
+    <h2>Kurzer Check‑in</h2>
+    <div class="row">
+      <div class="col"><label>Aktueller Stress <span class="value-badge" id="ciStressVal">5</span></label><input type="range" id="ciStress" min="0" max="10" value="5"><div class="small">0 = sehr ruhig, 10 = maximal gestresst</div></div>
+      <div class="col"><label>Ausgeruht / Schlafqualität <span class="value-badge" id="ciRestVal">6</span></label><input type="range" id="ciRest" min="0" max="10" value="6"><div class="small">0 = sehr müde, 10 = top fit</div></div>
+    </div>
+    <div style="margin-top:10px"><label>Ziel dieser Session</label><br><label class="tag"><input type="radio" name="ciGoal" value="acute" checked> Sofort runterkommen</label> <label class="tag"><input type="radio" name="ciGoal" value="train"> Langfristig trainieren</label></div>
+    <hr><div class="small" id="ciAdvice">Beantworte oben die Fragen und klicke „Empfehlung berechnen“.</div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button id="ciCalc" class="btn btn-primary">Empfehlung berechnen</button><button id="ciApply" class="btn btn-ghost">Übernehmen</button><button id="ciClose" class="btn btn-ghost">Schließen</button></div>
+  </div>
+</div>
+
+<div id="rateModal" class="modal">
+  <div class="box">
+    <h2>Session bewerten</h2>
+    <label>Wie entspannend war die Session? (1–5) <span class="value-badge" id="rateVal">3</span></label>
+    <input type="range" id="rating" min="1" max="5" value="3" style="width:100%">
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button id="rateSave" class="btn btn-primary">Speichern</button><button id="rateCancel" class="btn btn-ghost">Schließen</button></div>
+  </div>
+</div>
+
+<script>
+const DBKEY='calmloop_v3'; const state={voiceOn:false,voiceName:null,plan:null,running:false,logs:[],ratings:{},firstUse:null,lastCheckin:null};
+function load(){const raw=localStorage.getItem(DBKEY);if(raw){try{Object.assign(state,JSON.parse(raw));}catch(e){}}if(!state.firstUse){state.firstUse=new Date().toISOString();save();}}
+function save(){localStorage.setItem(DBKEY,JSON.stringify({voiceOn:state.voiceOn,voiceName:state.voiceName,logs:state.logs,ratings:state.ratings,firstUse:state.firstUse,lastCheckin:state.lastCheckin}));}
+function $(q){return document.querySelector(q);} function $all(q){return Array.from(document.querySelectorAll(q));}
+function setView(v){$all('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$all('.view').forEach(s=>s.style.display=s.id==='view-'+v?'':'none');if(v==='stats')drawChart();if(v==='log')renderLog();}
+$all('.nav button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+
+// Voice
+let voices=[];function pickGermanVoice(list){const de=list.find(v=>(v.lang||'').toLowerCase().startsWith('de'));return de||list[0]||null;}
+function loadVoices(){voices=window.speechSynthesis?speechSynthesis.getVoices():[];const sel=$('#voiceSelect');sel.innerHTML='';const opt0=document.createElement('option');opt0.value='';opt0.textContent='(Automatisch)';sel.appendChild(opt0);voices.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=`${v.name} — ${v.lang}`;sel.appendChild(o);});if(!state.voiceName&&voices.length){const cand=pickGermanVoice(voices);if(cand)state.voiceName=cand.name;save();}if(state.voiceName)sel.value=state.voiceName;}
+if('speechSynthesis'in window){speechSynthesis.onvoiceschanged=loadVoices;loadVoices();}
+$('#voiceSelect').addEventListener('change',e=>{state.voiceName=e.target.value||null;save();});
+$('#toggleVoice').addEventListener('click',()=>{state.voiceOn=!state.voiceOn;save();$('#toggleVoice').textContent=state.voiceOn?'🔊 An':'🔈 Aus';});
+function say(text){if(!state.voiceOn||!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);if(state.voiceName){const v=voices.find(v=>v.name===state.voiceName);if(v)u.voice=v;}u.lang='de-DE';u.rate=0.95;u.pitch=1;u.volume=1;window.speechSynthesis.cancel();window.speechSynthesis.speak(u);}
+
+// Recommendation
+function computeRecommendation(stress,rest,goal){let base=goal==='acute'?6:10;if(stress>=8)base+=goal==='acute'?0:2;else if(stress>=5)base+=1;else if(stress<=2)base+=goal==='train'?1:0;if(rest>=7)base+=2;else if(rest<=3)base-=2;if(base<5)base=5;if(base>20)base=20;return Math.round(base);}
+function applyCheckinToWeights(weights,stress,rest,goal){const base={'478':1.0,'box':0.9,'res':1.1,'pmr':0.8,'scan':0.7,'vis':0.6,'str':0.6};Object.assign(weights,base);if(goal==='acute'||stress>=7){weights['res']+=0.7;weights['478']+=0.5;weights['box']+=0.3;weights['scan']=Math.max(0.2,(weights['scan']||0.7)-0.3);weights['vis']=Math.max(0.2,(weights['vis']||0.6)-0.3);}else{weights['pmr']+=0.3;weights['scan']+=0.2;}if(rest<=3){weights['vis']=Math.max(0.2,(weights['vis']||0.6)-0.2);}return weights;}
+
+// Planner
+const minutesEl=$('#minutes'),minLabel=$('#minLabel'),recLabel=$('#recLabel');minutesEl.addEventListener('input',()=>{minLabel.textContent=minutesEl.value;});minLabel.textContent=minutesEl.value;
+const TECHS=[{key:'478',name:'4-7-8',type:'breath'},{key:'box',name:'Box',type:'breath'},{key:'res',name:'Resonanz',type:'breath'},{key:'pmr',name:'PMR',type:'pmr'},{key:'scan',name:'Body-Scan',type:'scan'},{key:'vis',name:'Visualisierung',type:'visual'},{key:'str',name:'Stretching',type:'stretch'}];
+function avg(arr){return arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;} function daysSince(dIso){const d=new Date(dIso);const now=new Date();return Math.floor((now-d)/(1000*60*60*24));}
+function suggestPlan(minutes){const ci=state.lastCheckin||{stress:5,rest:6,goal:'train'};const rec=computeRecommendation(ci.stress,ci.rest,ci.goal);if(recLabel)recLabel.textContent=`${rec} Min`;if(minutes<5)minutes=5;let remaining=minutes;const explore=daysSince(state.firstUse)<28;const weights={};applyCheckinToWeights(weights,ci.stress,ci.rest,ci.goal);TECHS.forEach(t=>{const r=state.ratings[t.key]||[];const pref=explore?1:Math.max(0.2,avg(r));weights[t.key]=(weights[t.key]||1)*pref;});const steps=[];function pick(pool){const sum=pool.reduce((s,t)=>s+(weights[t.key]||1),0);let r=Math.random()*sum;for(const t of pool){r-=(weights[t.key]||1);if(r<=0)return t;}return pool[0];}
+while(remaining>0.9){const t=pick(TECHS);const acute=ci.goal==='acute'||ci.stress>=7;let dur=0;if(acute){dur=t.type==='breath'?Math.min(remaining,Math.max(3,Math.min(5,remaining))):t.type==='pmr'?Math.min(remaining,4):Math.min(remaining,3);}else{dur=t.type==='breath'?Math.min(remaining,Math.max(3,Math.min(6,remaining))):t.type==='pmr'?Math.min(remaining,Math.max(4,Math.min(8,remaining))):t.type==='scan'?Math.min(remaining,Math.max(5,Math.min(10,remaining))):t.type==='visual'?Math.min(remaining,Math.max(3,Math.min(8,remaining))):Math.min(remaining,3);}dur=Math.round(dur);if(dur<=0)break;steps.push({tech:t.key,name:t.name,minutes:dur});remaining-=dur;if(steps.length>4&&remaining<2)break;}return steps;}
+function renderSuggestion(steps){if(!steps||!steps.length){$('#suggestion').textContent='Keine Vorschläge';return;}$('#suggestion').innerHTML=steps.map(s=>`<span class="tag">${s.name} • ${s.minutes} Min</span>`).join(' ');}
+$('#btnSuggest').addEventListener('click',()=>{const steps=suggestPlan(parseInt(minutesEl.value,10));state.plan=steps;renderSuggestion(steps);save();});
+
+// Runner
+let timer=null,stepTimer=null,current=null,queue=[],paused=false;const circle=$('#circle'),phaseLabel=$('#phaseLabel'),textGuide=$('#textGuide'),stepTitle=$('#stepTitle');const howTo=$('#howTo'),totalRemain=$('#totalRemain'),stepRemain=$('#stepRemain');const totalProg=$('#totalProg'),stepProg=$('#stepProg');let totalLeft=0,totalDuration=0,stepLeft=0,stepDuration=0;
+function fmt(s){s=Math.max(0,Math.floor(s));const m=Math.floor(s/60),r=s%60;return `${m}:${String(r).padStart(2,'0')}`;}
+function startSession(){const plan=state.plan&&state.plan.length?state.plan:suggestPlan(parseInt(minutesEl.value,10));state.plan=plan;save();renderSuggestion(plan);$('#coach-runner').classList.remove('hide');$('#btnSuggest').disabled=true;$('#btnStart').disabled=true;state.running=true;paused=false;queue=plan.slice();totalDuration=plan.reduce((a,b)=>a+b.minutes*60,0);totalLeft=totalDuration;say('Wir starten. Folge den Anweisungen.');nextStep();}
+function endSession(done){clearInterval(timer);clearInterval(stepTimer);timer=null;stepTimer=null;state.running=false;$('#btnSuggest').disabled=false;$('#btnStart').disabled=false;if(done){openRateModal();}}
+function nextStep(){if(queue.length===0){endSession(true);return;}current=queue.shift();stepTitle.textContent=current.name+` (${current.minutes} Min)`;stepDuration=current.minutes*60;stepLeft=stepDuration;updateTimers();if(current.tech==='478')runBreath(4,7,8,stepDuration,'4‑7‑8 Atmung: 4 s ein, 7 s halten, 8 s aus. Zunge am Gaumen, Schultern locker.');else if(current.tech==='box')runBreath(4,4,4,stepDuration,'Box‑Breathing: 4 s ein, 4 s halten, 4 s aus, 4 s halten. Gleichmäßiger Rhythmus.');else if(current.tech==='res')runResonance(stepDuration,'Resonanz‑Atmung: ca. 5–6 Atemzüge/Min. Lang ein, etwas länger aus.');else if(current.tech==='pmr')runPMR(stepDuration,'PMR: 30–40% Kraft für 5 s anspannen, dann 10–12 s lösen. Schmerzfrei bleiben.');else if(current.tech==='scan')runScan(stepDuration,'Body‑Scan: Aufmerksamkeit wandert durch den Körper. Nur spüren, nichts verändern.');else if(current.tech==='vis')runVisual(stepDuration,'Visualisierung: „Sicherer Ort“. Geräusche, Temperatur, Licht vorstellen.');else if(current.tech==='str')runStretch(stepDuration,'Stretching: Nacken, Schultern, Brust, Vorbeuge, Beine. Ruhiger Atem, keine Schmerzen.');
+clearInterval(timer);timer=setInterval(()=>{if(paused)return;totalLeft-=1;stepLeft-=1;updateTimers();if(stepLeft<=0){clearInterval(stepTimer);nextStep();}},1000);}
+function updateTimers(){totalRemain.textContent=fmt(totalLeft);stepRemain.textContent=fmt(stepLeft);totalProg.style.width=`${100*(1-totalLeft/Math.max(1,totalDuration))}%`;stepProg.style.width=`${100*(1-stepLeft/Math.max(1,stepDuration))}%`;}
+$('#btnStart').addEventListener('click',startSession);$('#btnStop').addEventListener('click',()=>endSession(true));$('#btnPause').addEventListener('click',()=>{paused=!paused;$('#btnPause').textContent=paused?'Weiter':'Pause';});
+function animateCircle(scale,label){circle.style.transform=`scale(${scale})`;phaseLabel.textContent=label||'—';}
+function runBreath(inh,hold,ex,total,caption){howTo.textContent=caption;say(caption);const start=Date.now();function tick(){if(paused)return;const t=(Date.now()-start)%((inh+hold+ex)*1000);if(t<inh*1000){animateCircle(1.15,'Ein');if(t<200)say('Einatmen');}else if(t<(inh+hold)*1000){animateCircle(1.0,'Halten');}else{animateCircle(0.85,'Aus');if(t<(inh+hold)*1000+200)say('Ausatmen');}}clearInterval(stepTimer);stepTimer=setInterval(tick,200);tick();}
+function runResonance(total,caption){howTo.textContent=caption;say('Resonanzatmung starten.');runBreath(5,0,5.9,total,caption);}
+function runPMR(total,caption){howTo.textContent=caption;say('Progressive Muskelentspannung.');const groups=['Schultern: zu den Ohren ziehen → lösen','Arme & Hände: Fäuste leicht ballen → lösen','Nacken: Kopf sanft gegen imaginäres Kissen drücken → lösen','Gesicht: Stirn runzeln, Augen zusammenkneifen → lösen','Brust: Atem anhalten (nicht pressen) → lösen','Bauch: Bauchmuskeln leicht anspannen → lösen','Rücken: Schulterblätter zueinander ziehen → lösen'];let idx=0;function step(){if(paused)return;const g=groups[idx%groups.length];textGuide.textContent=`Spanne ${g} (5 s), dann 10–12 s lösen.`;say(`Spanne ${g} für 5 Sekunden, dann lösen.`);setTimeout(()=>{setTimeout(()=>{idx++;textGuide.textContent='Lösen...';if(idx>=groups.length){nextStep();}else step();},10000);},5000);}step();}
+function runScan(total,caption){howTo.textContent=caption;say('Body Scan starten.');const parts=['Kopf','Nacken','Schultern','Arme','Brust','Bauch','Rücken','Beine','Füße'];const per=Math.max(8,Math.floor(total/parts.length));let i=0;function step(){if(paused)return;const p=parts[i%parts.length];textGuide.textContent=`Spüre in: ${p}`;say(`Spüre in ${p}`);setTimeout(()=>{i++;if(i>=parts.length){nextStep();}else step();},per*1000);}step();}
+function runVisual(total,caption){howTo.textContent=caption;say('Visualisierung starten.');const start=Date.now();function tick(){if(paused)return;animateCircle(1.0,'Vorstellen');if(Date.now()-start>=total*1000){clearInterval(stepTimer);nextStep();}}clearInterval(stepTimer);stepTimer=setInterval(tick,500);tick();}
+function runStretch(total,caption){howTo.textContent=caption;say('Stretching starten.');const seq=[{name:'Nacken rechts/links',instr:'Kopf zur Seite neigen, 10–15 s halten je Seite.'},{name:'Schulterkreisen',instr:'Langsam 10× nach hinten, 10× nach vorn.'},{name:'Brust öffnen',instr:'Hände hinter dem Rücken verschränken, sanft anheben, 20 s.'},{name:'Vorbeuge',instr:'Locker hängen lassen, Knie leicht beugen, 20 s.'},{name:'Beine lockern',instr:'Waden dehnen gegen Wand, je Seite 15 s.'}];const per=Math.max(10,Math.floor(total/seq.length));let i=0;function step(){if(paused)return;const s=seq[i%seq.length];textGuide.textContent=s.name+': '+s.instr;say(s.name);setTimeout(()=>{i++;if(i>=seq.length){nextStep();}else step();},per*1000);}step();}
+
+// Log
+function renderLog(){const wrap=$('#logList');if(!state.logs.length){wrap.textContent='Noch keine Einträge.';return;}wrap.innerHTML=state.logs.slice().reverse().map(l=>{const d=new Date(l.ts);const date=d.toLocaleString();return `<div class="card"><b>${l.kind||'—'}</b><br><span class="small">${date}</span><br><span>Bewertung: ${l.rating||'-'}</span></div>`;}).join('');}
+$('#btnSaveLog').addEventListener('click',()=>{const entry={ts:new Date().toISOString(),stressBefore:parseInt($('#stressBefore').value,10),stressAfter:parseInt($('#stressAfter').value,10),belly:parseInt($('#belly').value,10),appetite:parseInt($('#appetite').value,10),sleep:parseInt($('#sleep').value,10),kind:$('#logKind').value,notes:$('#notes').value};state.logs.push(entry);save();renderLog();});
+$('#btnExport').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({version:3,data:state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='calmloop_export.json';a.click();URL.revokeObjectURL(url);});
+$('#btnImport').addEventListener('click',()=>$('#importFile').click());$('#importFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);if(obj&&obj.data){Object.assign(state,obj.data);save();renderLog();alert('Import erfolgreich.');}else alert('Ungültige Datei.');}catch(err){alert('Import fehlgeschlagen.');}};reader.readAsText(file);});
+$('#btnClear').addEventListener('click',()=>{if(confirm('Alle Daten löschen?')){localStorage.removeItem(DBKEY);location.reload();}});
+
+// Chart
+function drawChart(){const canvas=$('#chart');const ctx=canvas.getContext('2d');const w=canvas.clientWidth,h=canvas.clientHeight;canvas.width=w*devicePixelRatio;canvas.height=h*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);ctx.clearRect(0,0,w,h);const items=state.logs.filter(l=>typeof l.stressBefore==='number'&&typeof l.stressAfter==='number').slice(-14);if(!items.length){ctx.fillStyle='#9fb3c8';ctx.fillText('Noch keine Daten für Diagramm.',10,20);$('#streak').textContent=calcStreak();$('#avgDelta').textContent='0';return;}const deltas=items.map(l=>(l.stressBefore-l.stressAfter));const max=Math.max(...deltas,1);const stepX=w/Math.max(1,items.length-1);ctx.lineWidth=2;ctx.strokeStyle='#8aa6ff';ctx.beginPath();deltas.forEach((d,i)=>{const x=i*stepX;const y=h-(d/max)*(h-20)-10;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.stroke();const avg=deltas.reduce((a,b)=>a+b,0)/deltas.length;$('#avgDelta').textContent=avg.toFixed(1);$('#streak').textContent=calcStreak();}
+function calcStreak(){const days=new Set(state.logs.map(l=>new Date(l.ts).toDateString()));let streak=0;const d=new Date();for(let i=0;i<365;i++){const s=new Date(d.getFullYear(),d.getMonth(),d.getDate()-i).toDateString();if(days.has(s))streak++;else break;}return streak;}
+
+// ICS
+function makeICS(times){const now=new Date();function fUTC(date){return date.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';}const dtstamp=fUTC(now);const uid=Math.random().toString(36).slice(2)+'@calmloop';const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CalmLoop//DE'];times.forEach(t=>{const[hh,mm]=t.split(':');const start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),parseInt(hh,10),parseInt(mm,10));lines.push('BEGIN:VEVENT','UID:'+uid+'-'+t,'DTSTAMP:'+dtstamp,'DTSTART:'+fUTC(start),'RRULE:FREQ=DAILY','SUMMARY:CalmLoop Session','DESCRIPTION:Tägliche kurze Entspannungsübung','END:VEVENT');});lines.push('END:VCALENDAR');return lines.join('\r\n');}
+$('#btnICS').addEventListener('click',()=>{const times=[$('#rem1').value,$('#rem2').value,$('#rem3').value].filter(Boolean);const ics=makeICS(times);const blob=new Blob([ics],{type:'text/calendar'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='calmloop_reminder.ics';a.click();URL.revokeObjectURL(url);});
+
+// Check-in modal
+const checkinModal=$('#checkinModal');$('#btnCheckin').addEventListener('click',()=>{checkinModal.style.display='flex';});$('#ciClose').addEventListener('click',()=>{checkinModal.style.display='none';});['ciStress','ciRest'].forEach(id=>{const el=$('#'+id);const valEl=$('#'+id+'Val');el.addEventListener('input',()=>valEl.textContent=el.value);valEl.textContent=el.value;});
+$('#ciCalc').addEventListener('click',()=>{const stress=parseInt($('#ciStress').value,10);const rest=parseInt($('#ciRest').value,10);const goal=document.querySelector('input[name="ciGoal"]:checked').value;const rec=computeRecommendation(stress,rest,goal);$('#ciAdvice').innerHTML=`Empfohlene Dauer: <b>${rec} Min</b> • ${goal==='acute'?'Fokus: schnelle Entspannung (verlängerte Ausatmung, Resonanzatmung).':'Fokus: Vielfalt (Atmung + PMR/Scan).'}<br><span class='small'>Hinweis: Mindestdauer 5 Min für zuverlässigere Wirkung.</span>`;});
+$('#ciApply').addEventListener('click',()=>{const stress=parseInt($('#ciStress').value,10);const rest=parseInt($('#ciRest').value,10);const goal=document.querySelector('input[name="ciGoal"]:checked').value;const rec=computeRecommendation(stress,rest,goal);state.lastCheckin={stress,rest,goal,rec};save();$('#minutes').value=rec;$('#minLabel').textContent=rec;if($('#recLabel'))$('#recLabel').textContent=`${rec} Min`;const steps=suggestPlan(rec);state.plan=steps;save();renderSuggestion(steps);checkinModal.style.display='none';});
+
+// Rating modal
+const rateModal=$('#rateModal');const ratingEl=$('#rating');const rateVal=$('#rateVal');ratingEl.addEventListener('input',()=>rateVal.textContent=ratingEl.value);
+function openRateModal(){rateVal.textContent=ratingEl.value;rateModal.style.display='flex';}
+$('#rateSave').addEventListener('click',()=>{const r=parseInt(ratingEl.value,10)||3;if(!state.ratings[current?.tech])state.ratings[current?.tech]=[];state.ratings[current?.tech].push(r);state.logs.push({ts:new Date().toISOString(),kind:current?current.name:'Session',rating:r});save();renderLog();rateModal.style.display='none';$('#coach-runner').classList.add('hide');});
+$('#rateCancel').addEventListener('click',()=>{rateModal.style.display='none';$('#coach-runner').classList.add('hide');});
+
+// Boot
+load();$('#toggleVoice').textContent=state.voiceOn?'🔊 An':'🔈 Aus';if(state.lastCheckin){const rec=computeRecommendation(state.lastCheckin.stress,state.lastCheckin.rest,state.lastCheckin.goal);if($('#recLabel'))$('#recLabel').textContent=`${rec} Min`;}renderSuggestion(state.plan||[]);renderLog();setView('coach');
+if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(err=>console.log('SW fail',err));});}
+</script>
+</body>
+</html>
