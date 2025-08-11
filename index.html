@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CalmLoop — Stress Coach</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CalmLoop">
+<meta name="theme-color" content="#101820">
+<style>
+:root{
+  --bg:#101820; --card:#111a23; --ink:#e7eef5; --muted:#9fb3c8;
+  --accent:#4dc0b5; --accent-2:#8aa6ff; --shadow:0 10px 30px rgba(0,0,0,.35);
+  --radius:16px; --gap:14px; --font:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font)}
+.container{max-width:860px;margin:0 auto;padding:clamp(12px,3vw,24px);padding-bottom:96px}
+header{position:sticky;top:0;background:linear-gradient(180deg,rgba(16,24,32,.95),rgba(16,24,32,.85));backdrop-filter:blur(6px);z-index:10}
+.brand{display:flex;align-items:center;gap:10px;padding:12px 4px}
+.brand .logo{width:34px;height:34px;border-radius:10px;background:#15222e;display:grid;place-items:center;box-shadow:var(--shadow)}
+.brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.nav button{flex:1;min-width:120px;padding:12px;border-radius:12px;border:1px solid #1d2a36;background:#0e1821;color:var(--ink);font-weight:600}
+.nav button.active{border-color:var(--accent);outline:2px solid rgba(77,192,181,.25)}
+.card{background:var(--card);border:1px solid #1d2a36;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:12px 0}
+h2{font-size:18px;margin:0 0 10px}
+label{font-size:14px;color:var(--muted)}
+input[type=range]{width:100%}
+.row{display:flex;gap:var(--gap);flex-wrap:wrap}
+.col{flex:1;min-width:260px}
+.small{font-size:12px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#0e1821;border:1px solid #1d2a36;color:var(--ink);font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border-radius:12px;border:none;font-weight:700;cursor:pointer}
+.btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#07121b}
+.btn-ghost{background:#0e1821;color:var(--ink);border:1px solid #1d2a36}
+.btn-danger{background:linear-gradient(90deg,#ff7a7f,#ff5a5f);color:#2b0d0f}
+.breath-visual{height:220px;display:grid;place-items:center}
+.circle{width:120px;height:120px;border-radius:999px;border:3px solid var(--accent);display:grid;place-items:center;transition:transform .8s ease}
+.circle p{margin:0;font-weight:800;letter-spacing:1px}
+.scale{display:flex;gap:6px;margin-top:8px}
+.scale input{flex:1}
+.stat-canvas{width:100%;height:180px;background:#0e1821;border:1px solid #1d2a36;border-radius:12px}
+footer.navbar{position:fixed;left:0;right:0;bottom:0;background:rgba(16,24,32,.96);backdrop-filter:blur(6px);display:flex;gap:6px;padding:8px;z-index:20;border-top:1px solid #1d2a36}
+footer.navbar button{flex:1;padding:10px;border-radius:12px;border:1px solid #1d2a36;background:#0e1821;color:var(--ink);font-weight:700}
+footer.navbar button.active{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="brand">
+      <div class="logo"><b>CL</b></div>
+      <h1>CalmLoop — Stress Coach</h1>
+    </div>
+    <div class="nav">
+      <button data-view="coach" class="active">Coach</button>
+      <button data-view="log">Protokoll</button>
+      <button data-view="stats">Stats</button>
+      <button data-view="settings">Einstellungen</button>
+      <button data-view="extras">Extras</button>
+    </div>
+  </div>
+</header>
+
+<div class="container" id="app">
+  <!-- COACH -->
+  <section class="view card" id="view-coach">
+    <h2>Session planen</h2>
+    <div class="row">
+      <div class="col">
+        <label>Verfügbare Zeit: <b><span id="minLabel">5</span> Min</b></label>
+        <div class="small">Empfohlen: <b><span id="recLabel">–</span></b></div>
+        <input type="range" id="minutes" min="1" max="30" value="5">
+        <div class="small">Die App passt Übungen an deine verfügbare Zeit und den Check-in an.</div>
+      </div>
+      <div class="col">
+        <label>Audio-Anweisungen</label><br>
+        <button id="toggleVoice" class="btn btn-ghost">🔈 Aus</button>
+        <span class="small">Nur wenn du es einschaltest. Offline-Voice über iOS.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Vorschlag</h2>
+      <div id="suggestion" class="small">Check-in oder Regler bewegen und „Vorschlagen“ tippen.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button id="btnCheckin" class="btn btn-ghost">Check-in</button>
+        <button id="btnSuggest" class="btn btn-ghost">Vorschlagen</button>
+        <button id="btnStart" class="btn btn-primary">Session starten</button>
+      </div>
+    </div>
+
+    <div class="card" id="coach-runner" style="display:none">
+      <h2 id="stepTitle">Anleitung</h2>
+      <div class="breath-visual">
+        <div class="circle" id="circle"><p id="phaseLabel">—</p></div>
+      </div>
+      <div class="small" id="textGuide">Bereit?</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="btnPause" class="btn btn-ghost">Pause</button>
+        <button id="btnStop" class="btn btn-danger">Beenden</button>
+      </div>
+      <hr>
+      <div>
+        <label>Wie entspannend war die Session? (1–5)</label>
+        <div class="scale">
+          <input type="range" id="rating" min="1" max="5" value="3">
+          <span id="ratingVal">3</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section class="view card" id="view-log" style="display:none">
+    <h2>Protokoll</h2>
+    <div class="row">
+      <div class="col">
+        <label>Stress (vorher)</label>
+        <input type="range" id="stressBefore" min="0" max="10" value="4">
+      </div>
+      <div class="col">
+        <label>Stress (nachher)</label>
+        <input type="range" id="stressAfter" min="0" max="10" value="2">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>Bauchdruck</label>
+        <input type="range" id="belly" min="0" max="10" value="3">
+      </div>
+      <div class="col">
+        <label>Appetit</label>
+        <input type="range" id="appetite" min="0" max="10" value="6">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>Schlaf (letzte Nacht)</label>
+        <input type="range" id="sleep" min="0" max="10" value="6">
+      </div>
+      <div class="col">
+        <label>Übungsart</label><br>
+        <select id="logKind">
+          <option>4-7-8</option>
+          <option>Box</option>
+          <option>Resonanz</option>
+          <option>PMR</option>
+          <option>Body-Scan</option>
+          <option>Visualisierung</option>
+          <option>Stretching</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Notizen</label>
+      <textarea id="notes" rows="3" style="width:100%;background:#0e1821;border:1px solid #1d2a36;border-radius:10px;color:var(--ink);padding:10px"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="btnSaveLog" class="btn btn-primary">Eintrag speichern</button>
+      <button id="btnExport" class="btn btn-ghost">Export (JSON)</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+      <button id="btnImport" class="btn btn-ghost">Import</button>
+      <button id="btnClear" class="btn btn-danger">Alles löschen</button>
+    </div>
+    <hr>
+    <div id="logList" class="small"></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="view card" id="view-stats" style="display:none">
+    <h2>Stats</h2>
+    <canvas id="chart" class="stat-canvas"></canvas>
+    <div class="row">
+      <div class="col"><div class="tag">Streak: <b id="streak">0</b> Tage</div></div>
+      <div class="col"><div class="tag">Ø Stress-Reduktion: <b id="avgDelta">0</b></div></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view card" id="view-settings" style="display:none">
+    <h2>Einstellungen</h2>
+    <div class="row">
+      <div class="col">
+        <label>Stimme für Audio-Anweisungen</label><br>
+        <select id="voiceSelect"></select>
+      </div>
+      <div class="col">
+        <label>Erinnerungen</label><br>
+        <div class="small">Web-Push ist auf iOS-PWAs kompliziert. Vorschlag: Kalender-Erinnerungen erzeugen.</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input type="time" id="rem1" value="07:30">
+          <input type="time" id="rem2" value="15:30">
+          <input type="time" id="rem3" value="22:00">
+          <button id="btnICS" class="btn btn-ghost">Kalender .ics</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXTRAS -->
+  <section class="view card" id="view-extras" style="display:none">
+    <h2>Zusatzübungen (optional)</h2>
+    <ul class="small">
+      <li>„2-Minuten-Drop“: 60s Bauchatmung + 30s Schulter, 30s Kiefer.</li>
+      <li>„Walk-Reset“: 5–10 Min. leiser Spaziergang ohne Handy.</li>
+      <li>„Screen-Cut“: 30 Min. vor Schlaf kein Bildschirm.</li>
+      <li>„Magnesium-Check“: 300–400 mg/Tag (nur wenn verträglich; kein Ersatz für ärztlichen Rat).</li>
+    </ul>
+  </section>
+</div>
+
+<footer class="navbar">
+  <button data-view="coach" class="active">Coach</button>
+  <button data-view="log">Protokoll</button>
+  <button data-view="stats">Stats</button>
+  <button data-view="settings">Einstellungen</button>
+  <button data-view="extras">Extras</button>
+</footer>
+
+<!-- Check-in Modal -->
+<div id="checkinModal" style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;">
+  <div style="background:#111a23;border:1px solid #1d2a36;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);width:min(620px,92vw);padding:16px;">
+    <h2>Kurzer Check-in</h2>
+    <div class="row">
+      <div class="col">
+        <label>Aktueller Stress</label>
+        <input type="range" id="ciStress" min="0" max="10" value="5">
+        <div class="small">0 = sehr ruhig, 10 = maximal gestresst</div>
+      </div>
+      <div class="col">
+        <label>Ausgeruht / Schlafqualität</label>
+        <input type="range" id="ciRest" min="0" max="10" value="6">
+        <div class="small">0 = sehr müde, 10 = top fit</div>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label>Ziel dieser Session</label><br>
+      <label class="tag"><input type="radio" name="ciGoal" value="acute" checked> Sofort runterkommen</label>
+      <label class="tag"><input type="radio" name="ciGoal" value="train"> Langfristig trainieren</label>
+    </div>
+    <hr>
+    <div class="small" id="ciAdvice">Beantworte oben die Fragen und klicke „Empfehlung berechnen“.</div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button id="ciCalc" class="btn btn-primary">Empfehlung berechnen</button>
+      <button id="ciApply" class="btn btn-ghost">Übernehmen</button>
+      <button id="ciClose" class="btn btn-ghost">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- State & Storage ----
+const DBKEY = 'calmloop_v2';
+const state = { voiceOn:false, voiceName:null, plan:null, running:false, logs:[], ratings:{}, firstUse:null, lastCheckin:null };
+function load(){ const raw = localStorage.getItem(DBKEY); if(raw){ try{Object.assign(state, JSON.parse(raw));}catch(e){} } if(!state.firstUse){ state.firstUse = new Date().toISOString(); save(); } }
+function save(){ localStorage.setItem(DBKEY, JSON.stringify({ voiceOn:state.voiceOn, voiceName:state.voiceName, logs:state.logs, ratings:state.ratings, firstUse:state.firstUse, lastCheckin:state.lastCheckin })); }
+function $(q){ return document.querySelector(q); }
+function $all(q){ return Array.from(document.querySelectorAll(q)); }
+function setView(v){ $all('footer.navbar button, .nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===v)); $all('.view').forEach(s=>s.style.display = s.id === 'view-'+v ? '' : 'none'); if(v==='stats') drawChart(); if(v==='log') renderLog(); }
+$all('footer.navbar button, .nav button').forEach(b=> b.addEventListener('click', ()=> setView(b.dataset.view)));
+
+// ---- Voice ----
+let voices = [];
+function loadVoices(){ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; const sel = $('#voiceSelect'); sel.innerHTML=''; const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='(iOS Standard)'; sel.appendChild(opt0); voices.forEach(v=>{ const o=document.createElement('option'); o.value=v.name; o.textContent=`${v.name} — ${v.lang}`; sel.appendChild(o); }); if(state.voiceName) sel.value=state.voiceName; }
+if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged = loadVoices; loadVoices(); }
+$('#voiceSelect').addEventListener('change', e => { state.voiceName = e.target.value || null; save(); });
+$('#toggleVoice').addEventListener('click', ()=> { state.voiceOn = !state.voiceOn; save(); $('#toggleVoice').textContent = state.voiceOn ? '🔊 An' : '🔈 Aus'; });
+function say(text){ if(!state.voiceOn || !('speechSynthesis' in window)) return; const u=new SpeechSynthesisUtterance(text); if(state.voiceName){ const v=voices.find(v=>v.name===state.voiceName); if(v) u.voice=v; } u.rate=0.95; u.pitch=1; u.volume=1; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }
+
+// ---- Recommendation Engine (evidence-informed) ----
+function computeRecommendation(stress, rest, goal){
+  let base = goal==='acute' ? 6 : 10;
+  if(stress >= 8) base += goal==='acute' ? 0 : 2;
+  else if(stress >= 5) base += 1;
+  else if(stress <= 2) base += goal==='train' ? 1 : 0;
+  if(rest >= 7) base += 2;
+  else if(rest <= 3) base -= 2;
+  if(base < 5) base = 5; if(base > 20) base = 20;
+  return Math.round(base);
+}
+function applyCheckinToWeights(weights, stress, rest, goal){
+  const base = {'478':1.0,'box':0.9,'res':1.1,'pmr':0.8,'scan':0.7,'vis':0.6,'str':0.6};
+  Object.assign(weights, base);
+  if(goal==='acute' || stress >= 7){
+    weights['res'] += 0.7;
+    weights['478'] += 0.5;
+    weights['box']  += 0.3;
+    weights['scan'] -= 0.3; if(weights['scan']<0.2) weights['scan']=0.2;
+    weights['vis']  -= 0.3; if(weights['vis']<0.2) weights['vis']=0.2;
+  }else{
+    weights['pmr'] += 0.3;
+    weights['scan'] += 0.2;
+  }
+  if(rest <= 3){ weights['vis'] -= 0.2; if(weights['vis']<0.2) weights['vis']=0.2; }
+  return weights;
+}
+
+// ---- Planner ----
+const minutesEl = $('#minutes'); const minLabel = $('#minLabel'); const recLabel = $('#recLabel');
+minutesEl.addEventListener('input', ()=> { minLabel.textContent = minutesEl.value; });
+minLabel.textContent = minutesEl.value;
+
+const TECHS = [
+  { key:'478', name:'4-7-8', type:'breath' },
+  { key:'box', name:'Box', type:'breath' },
+  { key:'res', name:'Resonanz', type:'breath' },
+  { key:'pmr', name:'PMR', type:'pmr' },
+  { key:'scan', name:'Body-Scan', type:'scan' },
+  { key:'vis', name:'Visualisierung', type:'visual' },
+  { key:'str', name:'Stretching', type:'stretch' }
+];
+function avg(arr){ return arr.length? (arr.reduce((a,b)=>a+b,0)/arr.length):0; }
+function daysSince(dIso){ const d=new Date(dIso); const now=new Date(); return Math.floor((now-d)/(1000*60*60*24)); }
+
+function suggestPlan(minutes){
+  const ci = state.lastCheckin || {stress:5, rest:6, goal:'train'};
+  const rec = computeRecommendation(ci.stress, ci.rest, ci.goal);
+  if(recLabel) recLabel.textContent = `${rec} Min`;
+  if(minutes < 5) minutes = 5; // Mindestdauer für Wirksamkeit
+  let remaining = minutes;
+
+  const explore = daysSince(state.firstUse) < 28;
+  const weights = {}; applyCheckinToWeights(weights, ci.stress, ci.rest, ci.goal);
+  TECHS.forEach(t => {
+    const r = state.ratings[t.key] || [];
+    const pref = explore ? 1 : Math.max(0.2, avg(r));
+    weights[t.key] = (weights[t.key]||1) * pref;
+  });
+
+  const steps=[];
+  const pool = TECHS.slice();
+  function pick(pool){
+    const sum = pool.reduce((s,t)=> s+(weights[t.key]||1),0);
+    let r = Math.random()*sum;
+    for(const t of pool){ r -= (weights[t.key]||1); if(r<=0) return t; }
+    return pool[0];
+  }
+  while(remaining > 0.9){
+    let t = pick(pool);
+    let dur;
+    const acute = ci.goal==='acute' || ci.stress>=7;
+    if(acute){
+      dur = t.type==='breath' ? Math.min(remaining, Math.max(3, Math.min(5, remaining))) :
+            t.type==='pmr' ? Math.min(remaining, 4) :
+            Math.min(remaining, 3);
+    }else{
+      dur = t.type==='breath' ? Math.min(remaining, Math.max(3, Math.min(6, remaining))) :
+            t.type==='pmr' ? Math.min(remaining, Math.max(4, Math.min(8, remaining))) :
+            t.type==='scan' ? Math.min(remaining, Math.max(5, Math.min(10, remaining))) :
+            t.type==='visual' ? Math.min(remaining, Math.max(3, Math.min(8, remaining))) :
+            Math.min(remaining, 3);
+    }
+    dur = Math.round(dur);
+    if(dur<=0) break;
+    steps.push({tech:t.key, name:t.name, minutes:dur});
+    remaining -= dur;
+    if(steps.length>4 && remaining<2) break;
+  }
+  return steps;
+}
+function renderSuggestion(steps){
+  if(!steps || !steps.length){ $('#suggestion').textContent = 'Keine Vorschläge'; return; }
+  const parts = steps.map(s => `<span class="tag">${s.name} • ${s.minutes} Min</span>`);
+  $('#suggestion').innerHTML = parts.join(' ');
+}
+$('#btnSuggest').addEventListener('click', ()=> {
+  const steps = suggestPlan(parseInt(minutesEl.value,10));
+  state.plan = steps; renderSuggestion(steps); save();
+});
+
+// ---- Runner ----
+let timer=null, current=null, queue=[], paused=false;
+const circle = $('#circle'); const phaseLabel = $('#phaseLabel'); const textGuide = $('#textGuide'); const stepTitle = $('#stepTitle');
+const rating = $('#rating'); const ratingVal = $('#ratingVal'); rating.addEventListener('input', ()=> ratingVal.textContent = rating.value);
+
+function startSession(){
+  const plan = state.plan && state.plan.length ? state.plan : suggestPlan(parseInt(minutesEl.value,10));
+  state.plan = plan; save(); renderSuggestion(plan);
+  $('#coach-runner').style.display='';
+  $('#btnSuggest').disabled=true; $('#btnStart').disabled=true;
+  state.running = true; paused=false;
+  queue = plan.slice();
+  say('Wir starten. Folge meinen ruhigen Anweisungen.');
+  nextStep();
+}
+function nextStep(){
+  if(queue.length===0){ endSession(true); return; }
+  current = queue.shift();
+  stepTitle.textContent = current.name + ` (${current.minutes} Min)`;
+  if(current.tech==='478') runBreath(4,7,8, current.minutes*60);
+  else if(current.tech==='box') runBreath(4,4,4, current.minutes*60, true);
+  else if(current.tech==='res') runResonance(current.minutes*60);
+  else if(current.tech==='pmr') runPMR(current.minutes*60);
+  else if(current.tech==='scan') runScan(current.minutes*60);
+  else if(current.tech==='vis') runVisual(current.minutes*60);
+  else if(current.tech==='str') runStretch(current.minutes*60);
+}
+function endSession(done){
+  clearInterval(timer); timer=null; state.running=false;
+  $('#coach-runner').style.display='';
+  $('#btnSuggest').disabled=false; $('#btnStart').disabled=false;
+  if(done){
+    const r = parseInt($('#rating').value,10)||3;
+    if(!state.ratings[current.tech]) state.ratings[current.tech]=[];
+    state.ratings[current.tech].push(r);
+    state.logs.push({ ts:new Date().toISOString(), kind: current.name, rating:r });
+    save();
+    say('Gut gemacht. Notiere deinen Eindruck im Protokoll.');
+  }
+  renderLog();
+}
+$('#btnStart').addEventListener('click', startSession);
+$('#btnStop').addEventListener('click', ()=> endSession(false));
+$('#btnPause').addEventListener('click', ()=> { paused = !paused; $('#btnPause').textContent = paused? 'Weiter' : 'Pause'; });
+function animateCircle(scale, label){ circle.style.transform = `scale(${scale})`; phaseLabel.textContent = label || '—'; }
+
+// Breathing engines
+function runBreath(inh, hold, ex, total, withHoldBox=false){
+  say(`Atme ein ${inh} Sekunden, halte ${hold} Sekunden, atme aus ${ex} Sekunden.`);
+  const cycle = (inh+hold+ex)*1000; const start = Date.now();
+  function tick(){
+    if(paused) return;
+    const t = (Date.now()-start) % cycle;
+    if(t < inh*1000){ animateCircle(1.15,'Ein'); if(t<200) say('Einatmen'); }
+    else if(t < (inh+hold)*1000){ animateCircle(1.0,'Halten'); }
+    else { animateCircle(0.85,'Aus'); if(t< (inh+hold)*1000+200) say('Ausatmen'); }
+    if(Date.now()-start >= total*1000){ clearInterval(timer); nextStep(); }
+  }
+  clearInterval(timer); timer = setInterval(tick, 200); tick();
+}
+function runResonance(total){ runBreath(5, 0, 5.9, total); }
+function runPMR(total){
+  const groups = ['Schultern','Arme & Hände','Nacken','Gesicht','Brust','Bauch','Rücken'];
+  const per = Math.max(12, Math.floor(total / groups.length));
+  let idx=0; say('PMR: Spanne 5 Sekunden an, dann lösen.');
+  function step(){
+    if(paused) return;
+    const g = groups[idx%groups.length];
+    textGuide.textContent = `Spanne ${g} 5 Sekunden an, dann lösen.`;
+    setTimeout(()=>{
+      setTimeout(()=>{
+        idx++; if(idx>=groups.length){ nextStep(); } else step();
+      }, (per-5)*1000);
+    }, 5000);
+  } step();
+}
+function runScan(total){
+  const parts = ['Kopf','Nacken','Schultern','Arme','Brust','Bauch','Rücken','Beine','Füße'];
+  const per = Math.max(8, Math.floor(total/parts.length));
+  let i=0; say('Body Scan. Wandere mit der Aufmerksamkeit durch den Körper.');
+  function step(){ if(paused) return; const p=parts[i%parts.length]; textGuide.textContent = `Spüre in: ${p}`; setTimeout(()=>{ i++; if(i>=parts.length){ nextStep(); } else step(); }, per*1000); }
+  step();
+}
+function runVisual(total){ say('Stell dir deinen sicheren Ort vor: Geräusche, Luft, Temperatur.'); const start=Date.now(); function tick(){ if(paused) return; animateCircle(1.0,'Vorstellen'); if(Date.now()-start >= total*1000){ clearInterval(timer); nextStep(); } } clearInterval(timer); timer = setInterval(tick, 500); tick(); }
+function runStretch(total){
+  const seq = ['Nacken rechts/links','Schulterkreisen','Brust öffnen','Vorbeuge','Beine lockern'];
+  const per = Math.max(10, Math.floor(total/seq.length));
+  let i=0; say('Sanftes Stretching. Schmerzfrei bleiben.'); function step(){ if(paused) return; const s=seq[i%seq.length]; textGuide.textContent = s; setTimeout(()=>{ i++; if(i>=seq.length){ nextStep(); } else step(); }, per*1000); } step();
+}
+
+// ---- Log ----
+function renderLog(){
+  const wrap = $('#logList');
+  if(!state.logs.length){ wrap.textContent = 'Noch keine Einträge.'; return; }
+  wrap.innerHTML = state.logs.slice().reverse().map(l => {
+    const d = new Date(l.ts); const date = d.toLocaleString();
+    return `<div class="card"><b>${l.kind||'—'}</b><br><span class="small">${date}</span><br><span>Bewertung: ${l.rating||'-'}</span></div>`;
+  }).join('');
+}
+$('#btnSaveLog').addEventListener('click', ()=> {
+  const entry = {
+    ts: new Date().toISOString(),
+    stressBefore: parseInt($('#stressBefore').value,10),
+    stressAfter: parseInt($('#stressAfter').value,10),
+    belly: parseInt($('#belly').value,10),
+    appetite: parseInt($('#appetite').value,10),
+    sleep: parseInt($('#sleep').value,10),
+    kind: $('#logKind').value,
+    notes: $('#notes').value
+  };
+  state.logs.push(entry); save(); renderLog();
+});
+$('#btnExport').addEventListener('click', ()=> {
+  const blob = new Blob([JSON.stringify({version:2, data:state}, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='calmloop_export.json'; a.click(); URL.revokeObjectURL(url);
+});
+$('#btnImport').addEventListener('click', ()=> $('#importFile').click());
+$('#importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{ try{ const obj = JSON.parse(reader.result); if(obj && obj.data){ Object.assign(state, obj.data); save(); renderLog(); alert('Import erfolgreich.'); } else alert('Ungültige Datei.'); }catch(err){ alert('Import fehlgeschlagen.'); } };
+  reader.readAsText(file);
+});
+$('#btnClear').addEventListener('click', ()=> { if(confirm('Alle Daten löschen?')){ localStorage.removeItem(DBKEY); location.reload(); } });
+
+// ---- Chart ----
+function drawChart(){
+  const canvas = $('#chart'); const ctx = canvas.getContext('2d');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * devicePixelRatio; canvas.height = h * devicePixelRatio; ctx.scale(devicePixelRatio, devicePixelRatio);
+  ctx.clearRect(0,0,w,h);
+  const items = state.logs.filter(l => typeof l.stressBefore==='number' && typeof l.stressAfter==='number').slice(-14);
+  if(!items.length){ ctx.fillStyle='#9fb3c8'; ctx.fillText('Noch keine Daten für Diagramm.', 10, 20); $('#streak').textContent = calcStreak(); $('#avgDelta').textContent = '0'; return; }
+  const deltas = items.map(l => (l.stressBefore - l.stressAfter));
+  const max = Math.max(...deltas, 1); const stepX = w / Math.max(1, items.length-1);
+  ctx.lineWidth = 2; ctx.strokeStyle = '#8aa6ff'; ctx.beginPath();
+  deltas.forEach((d,i)=>{ const x=i*stepX; const y = h - (d/max)*(h-20) - 10; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke();
+  const avg = deltas.reduce((a,b)=>a+b,0)/deltas.length; $('#avgDelta').textContent = avg.toFixed(1); $('#streak').textContent = calcStreak();
+}
+function calcStreak(){
+  const days = new Set(state.logs.map(l => new Date(l.ts).toDateString()));
+  let streak=0; const d=new Date();
+  for(let i=0;i<365;i++){ const s=new Date(d.getFullYear(), d.getMonth(), d.getDate()-i).toDateString(); if(days.has(s)) streak++; else break; }
+  return streak;
+}
+
+// ---- ICS (Calendar reminders) ----
+function makeICS(times){
+  const now = new Date();
+  function fUTC(date){ return date.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z'; }
+  const dtstamp = fUTC(now);
+  const uid = Math.random().toString(36).slice(2)+'@calmloop';
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CalmLoop//DE'];
+  times.forEach(t => {
+    const [hh,mm] = t.split(':');
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hh,10), parseInt(mm,10));
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:'+uid+'-'+t);
+    lines.push('DTSTAMP:'+dtstamp);
+    lines.push('DTSTART:'+fUTC(start));
+    lines.push('RRULE:FREQ=DAILY');
+    lines.push('SUMMARY:CalmLoop Session');
+    lines.push('DESCRIPTION:Tägliche kurze Entspannungsübung');
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+$('#btnICS').addEventListener('click', ()=> {
+  const times = [$('#rem1').value, $('#rem2').value, $('#rem3').value].filter(Boolean);
+  const ics = makeICS(times); const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='calmloop_reminder.ics'; a.click(); URL.revokeObjectURL(url);
+});
+
+// ---- Check-in Modal Handlers ----
+const modal = document.getElementById('checkinModal');
+document.getElementById('btnCheckin').addEventListener('click', ()=>{ modal.style.display='flex'; });
+document.getElementById('ciClose').addEventListener('click', ()=>{ modal.style.display='none'; });
+document.getElementById('ciCalc').addEventListener('click', ()=>{
+  const stress = parseInt(document.getElementById('ciStress').value,10);
+  const rest   = parseInt(document.getElementById('ciRest').value,10);
+  const goal   = document.querySelector('input[name="ciGoal"]:checked').value;
+  const rec = computeRecommendation(stress, rest, goal);
+  const advice = document.getElementById('ciAdvice');
+  advice.innerHTML = `Empfohlene Dauer: <b>${rec} Min</b> • ${goal==='acute'?'Fokus: schnelle Entspannung (Atmung mit verlängerter Ausatmung, Resonanzatmung).':'Fokus: Vielfalt (Atmung + PMR/Scan).'}<br><span class="small">Begründung: langsames, exhalationsbetontes Atmen steigert kurzfristig vagale Aktivität; regelmäßiges Resonanz-/HRV-Training erhöht langfristig die Stressresilienz.</span>`;
+});
+document.getElementById('ciApply').addEventListener('click', ()=>{
+  const stress = parseInt(document.getElementById('ciStress').value,10);
+  const rest   = parseInt(document.getElementById('ciRest').value,10);
+  const goal   = document.querySelector('input[name="ciGoal"]:checked').value;
+  const rec = computeRecommendation(stress, rest, goal);
+  state.lastCheckin = {stress, rest, goal, rec}; save();
+  document.getElementById('minutes').value = rec;
+  document.getElementById('minLabel').textContent = rec;
+  if(document.getElementById('recLabel')) document.getElementById('recLabel').textContent = `${rec} Min`;
+  const steps = suggestPlan(rec); state.plan = steps; save(); renderSuggestion(steps);
+  modal.style.display='none';
+});
+
+// ---- Boot ----
+load();
+$('#toggleVoice').textContent = state.voiceOn ? '🔊 An' : '🔈 Aus';
+if(state.lastCheckin){ const rec = computeRecommendation(state.lastCheckin.stress, state.lastCheckin.rest, state.lastCheckin.goal); if(document.getElementById('recLabel')) document.getElementById('recLabel').textContent = `${rec} Min`; }
+renderSuggestion(state.plan || []);
+renderLog();
+setView('coach');
+
+// Register Service Worker
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=> { navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW fail', err)); }); }
+</script>
+</body>
+</html>
